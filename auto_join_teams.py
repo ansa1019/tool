@@ -1,18 +1,18 @@
 import os
 import re
-from dotenv import load_dotenv
 import time
 import datetime
 import requests
 import threading
 from pyngrok import ngrok
+from dotenv import load_dotenv
 from selenium import webdriver
 from flask import Flask, request
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support import expected_conditions as EC
 
 
@@ -38,7 +38,20 @@ RETRY_LIMIT = 2  # 自動重試次數（例如：按鈕找不到時）
 #   date：YYYY-MM-DD
 #   time：HH:MM（24小時制）
 #   url：Teams 連結（可以先填空字串，之後用 LINE 補）
-SCHEDULES = os.getenv("TEAMS_SCHEDULES")
+SCHEDULES = [
+    {"date": "2025-11-18", "time": "17:25", "url": ""},
+    {"date": "2025-11-20", "time": "17:25", "url": ""},
+    {"date": "2025-11-21", "time": "17:25", "url": ""},
+    {"date": "2025-11-24", "time": "17:25", "url": ""},
+    {"date": "2025-11-25", "time": "17:25", "url": ""},
+    {"date": "2025-11-26", "time": "17:25", "url": ""},
+    {"date": "2025-11-27", "time": "17:25", "url": ""},
+    {"date": "2025-11-28", "time": "17:25", "url": ""},
+    {"date": "2025-12-01", "time": "17:25", "url": ""},
+    {"date": "2025-12-02", "time": "17:25", "url": ""},
+    {"date": "2025-12-03", "time": "17:25", "url": ""},
+    {"date": "2025-12-04", "time": "17:25", "url": ""},
+]
 
 
 # ============================================================
@@ -345,8 +358,10 @@ def auto_join_meeting(override_url: str = None):
 
             # 不使用音訊
             try:
-                no_audio = driver.find_element(
-                    By.XPATH, '//input[@type="radio" and @value="3"]'
+                no_audio = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, '//input[@type="radio" and @value="3"]')
+                    )
                 )
                 no_audio.click()
             except Exception:
@@ -358,7 +373,11 @@ def auto_join_meeting(override_url: str = None):
 
             # 「立即加入」
             try:
-                join = driver.find_element(By.XPATH, '//button[@aria-label="立即加入"]')
+                join = wait.until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, '//button[@aria-label="立即加入"]')
+                    )
+                )
                 join.click()
             except Exception:
                 if attempt == RETRY_LIMIT:
@@ -421,9 +440,9 @@ def schedule_runner():
         remind_interval = None  # 秒數
 
         if 6 <= hour < 17:
-            remind_interval = 2 * 60 * 60       # 2 小時
+            remind_interval = 2 * 60 * 60  # 2 小時
         elif 17 <= hour < 24:
-            remind_interval = 5 * 60            # 5 分鐘
+            remind_interval = 5 * 60  # 5 分鐘
 
         if remind_interval is not None:
             if (last_remind_time is None) or (
@@ -466,5 +485,5 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("🛑 手動中止程式")
         ngrok.kill()
+        print("🛑 手動中止程式")
